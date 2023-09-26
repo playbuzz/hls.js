@@ -280,6 +280,7 @@ http://bar.example.com/audio-only/prog_index.m3u8`,
       expect(parsedLevels).to.have.lengthOf(6, 'MANIFEST_LOADED levels');
       levelController.onManifestLoaded(Events.MANIFEST_LOADED, {
         levels: parsedLevels,
+        audioTracks: [],
       });
       const {
         name,
@@ -657,6 +658,7 @@ http://bar.example.com/md/prog_index.m3u8`,
       expect(parsedLevels).to.have.lengthOf(4, 'MANIFEST_LOADED levels');
       levelController.onManifestLoaded(Events.MANIFEST_LOADED, {
         levels: parsedLevels,
+        audioTracks: [],
       });
       const {
         name,
@@ -716,6 +718,7 @@ http://bar.example.com/md/prog_index.m3u8`;
       expect(parsedSubs).to.be.undefined;
       levelController.onManifestLoaded(Events.MANIFEST_LOADED, {
         levels: parsedLevels,
+        audioTracks: parsedAudio,
       });
       const {
         name,

@@ -427,7 +427,6 @@ class AudioStreamController
     event: Events.AUDIO_TRACKS_UPDATED,
     { audioTracks }: AudioTracksUpdatedData,
   ) {
-    this.resetTransmuxer();
     this.levels = audioTracks.map((mediaPlaylist) => new Level(mediaPlaylist));
   }
 

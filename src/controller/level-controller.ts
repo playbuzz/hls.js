@@ -29,6 +29,7 @@ import {
 import BasePlaylistController from './base-playlist-controller';
 import { PlaylistContextType, PlaylistLevelType } from '../types/loader';
 import ContentSteeringController from './content-steering-controller';
+import { getSelectionOptionsByGroup } from '../utils/rendition-helper';
 import { reassignFragmentLevelIndexes } from '../utils/level-helper';
 import { hlsDefaultConfig } from '../config';
 import type Hls from '../hls';
@@ -123,6 +124,12 @@ export default class LevelController extends BasePlaylistController {
     const levelSet: { [key: string]: Level } = {};
     let levelFromSet: Level;
 
+    const { audioTracks, subtitles } = data;
+    const audioOptionsByGroup = getSelectionOptionsByGroup(audioTracks);
+    const subtitleOptionsByGroup = subtitles
+      ? getSelectionOptionsByGroup(subtitles)
+      : null;
+
     // regroup redundant levels together
     data.levels.forEach((levelParsed: LevelParsed) => {
       const attributes = levelParsed.attrs;
@@ -154,9 +161,22 @@ export default class LevelController extends BasePlaylistController {
       const contentSteeringPrefix = __USE_CONTENT_STEERING__
         ? `${PATHWAY || '.'}-`
         : '';
-      const levelKey = `${contentSteeringPrefix}${levelParsed.bitrate}-${RESOLUTION}-${FRAMERATE}-${CODECS}`;
-      levelFromSet = levelSet[levelKey];
+      let levelKey = `${contentSteeringPrefix}${levelParsed.bitrate}-${RESOLUTION}-${FRAMERATE}-${CODECS}`;
 
+      // Do not group levels with different audio or subtitle options in their respective groups (#5302)
+      const audioOptions = AUDIO ? audioOptionsByGroup[AUDIO] : null;
+      if (audioOptions) {
+        levelKey += `-${audioOptions.join(',')}`;
+      }
+      const subtitleOptions =
+        SUBTITLES && subtitleOptionsByGroup
+          ? subtitleOptionsByGroup[SUBTITLES]
+          : null;
+      if (subtitleOptions) {
+        levelKey += `-${subtitleOptions.join(',')}`;
+      }
+
+      levelFromSet = levelSet[levelKey];
       if (!levelFromSet) {
         levelFromSet = new Level(levelParsed);
         levelSet[levelKey] = levelFromSet;

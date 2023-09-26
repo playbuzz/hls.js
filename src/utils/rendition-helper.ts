@@ -184,6 +184,23 @@ export function getAudioTracksByGroup(allAudioTracks: MediaPlaylist[]) {
   );
 }
 
+export function getSelectionOptionsByGroup(
+  tracks: MediaPlaylist[],
+): Record<string, string[]> {
+  return tracks.reduce((options, track) => {
+    const characteristics = track.attrs.CHARACTERISTICS;
+    const trackKey = `${track.name}-${track.lang}-${
+      characteristics ? '-' + characteristics : ''
+    }`;
+    let option = options[track.groupId];
+    if (!option) {
+      options[track.groupId] = option = [];
+    }
+    option.push(trackKey);
+    return options;
+  }, {});
+}
+
 export function getCodecTiers(
   levels: Level[],
   audioTracksByGroup: AudioTracksByGroup,

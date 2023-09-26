@@ -195,19 +195,22 @@ class AudioTrackController extends BasePlaylistController {
     // stopping live reloading timer if any
     this.clearTimer();
 
+    this.selectDefaultTrack = false;
     const lastTrack = this.currentTrack;
-    tracks[this.trackId];
     const track = tracks[newId];
+    const trackLoaded = track.details && !track.details.live;
+    if (newId === this.trackId && track === lastTrack && trackLoaded) {
+      return;
+    }
     const { groupId, name } = track;
     this.log(
       `Switching to audio-track ${newId} "${name}" lang:${track.lang} group:${groupId}`,
     );
     this.trackId = newId;
     this.currentTrack = track;
-    this.selectDefaultTrack = false;
     this.hls.trigger(Events.AUDIO_TRACK_SWITCHING, { ...track });
     // Do not reload track unless live
-    if (track.details && !track.details.live) {
+    if (trackLoaded) {
       return;
     }
     const hlsUrlParameters = this.switchParams(track.url, lastTrack?.details);
@@ -266,9 +269,9 @@ class AudioTrackController extends BasePlaylistController {
   }
 
   protected loadPlaylist(hlsUrlParameters?: HlsUrlParameters): void {
-    super.loadPlaylist();
-    const audioTrack = this.tracksInGroup[this.trackId];
-    if (this.shouldLoadPlaylist(audioTrack)) {
+    const audioTrack = this.currentTrack;
+    if (this.shouldLoadPlaylist(audioTrack) && audioTrack) {
+      super.loadPlaylist();
       const id = audioTrack.id;
       const groupId = audioTrack.groupId as string;
       let url = audioTrack.url;
