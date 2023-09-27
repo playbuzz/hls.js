@@ -22,7 +22,11 @@ import type CMCDController from './controller/cmcd-controller';
 import type EMEController from './controller/eme-controller';
 import type SubtitleTrackController from './controller/subtitle-track-controller';
 import type { ComponentAPI, NetworkComponentAPI } from './types/component-api';
-import type { MediaPlaylist } from './types/media-playlist';
+import type {
+  AudioSelectionOption,
+  MediaPlaylist,
+  SubtitleSelectionOption,
+} from './types/media-playlist';
 import type { HlsConfig } from './config';
 import type { BufferInfo } from './utils/buffer-helper';
 import type AudioStreamController from './controller/audio-stream-controller';
@@ -350,6 +354,11 @@ export default class Hls implements HlsEventEmitter {
   }
 
   /**
+    if (!media) {
+      throw new Error(
+        'Missing argument: attachMedia expects an HTMLMediaElement as its first argument',
+      );
+    }
    * Attaches Hls.js to a media element
    */
   attachMedia(media: HTMLMediaElement) {
@@ -805,6 +814,21 @@ export default class Hls implements HlsEventEmitter {
     }
   }
 
+  get audioOption(): MediaPlaylist | null {
+    const audioTrackController = this.audioTrackController;
+    return audioTrackController ? audioTrackController.audioOption : null;
+  }
+
+  set audioOption(audioOption: MediaPlaylist | AudioSelectionOption) {
+    // name: "Mandarin"
+    // lang: "zh"
+    // groupId: "ec3"
+    // audioCodec: "ec-3"
+    // TODO: Attributes as properties would be nice
+    // CHARACTERISTICS: "public.accessibility.transcribes-spoken-dialog"
+    // CHANNELS: "6"
+  }
+
   /**
    * get the complete list of subtitle tracks across all media groups
    */
@@ -831,6 +855,19 @@ export default class Hls implements HlsEventEmitter {
   get subtitleTrack(): number {
     const subtitleTrackController = this.subtitleTrackController;
     return subtitleTrackController ? subtitleTrackController.subtitleTrack : -1;
+  }
+
+  get subtitleOption(): MediaPlaylist | null {
+    const audioTrackController = this.audioTrackController;
+    return audioTrackController ? audioTrackController.audioOption : null;
+  }
+
+  set subtitleOption(subtitleOption: MediaPlaylist | SubtitleSelectionOption) {
+    // name: "Mandarin"
+    // lang: "zh"
+    // groupId: "ec3"
+    // TODO: Attributes as properties would be nice
+    // CHARACTERISTICS: "public.accessibility.transcribes-spoken-dialog"
   }
 
   get media() {

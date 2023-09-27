@@ -183,6 +183,10 @@ class AudioTrackController extends BasePlaylistController {
     this.setAudioTrack(newId);
   }
 
+  get audioOption(): MediaPlaylist | null {
+    return this.currentTrack;
+  }
+
   private setAudioTrack(newId: number): void {
     const tracks = this.tracksInGroup;
 
@@ -199,6 +203,7 @@ class AudioTrackController extends BasePlaylistController {
     const lastTrack = this.currentTrack;
     const track = tracks[newId];
     const trackLoaded = track.details && !track.details.live;
+    // TODO: need to consider if track is loading as well as loaded. `requestScheduled` is set for loading and reloading only.
     if (newId === this.trackId && track === lastTrack && trackLoaded) {
       return;
     }
