@@ -163,7 +163,7 @@ export function getAudioTracksByGroup(allAudioTracks: MediaPlaylist[]) {
         };
       }
       trackGroup.tracks.push(track);
-      const channelsKey = track.attrs.CHANNELS || '2';
+      const channelsKey = track.channels || '2';
       trackGroup.channels[channelsKey] =
         (trackGroup.channels[channelsKey] || 0) + 1;
       trackGroup.hasDefault = trackGroup.hasDefault || track.default;
@@ -186,19 +186,21 @@ export function getAudioTracksByGroup(allAudioTracks: MediaPlaylist[]) {
 
 export function getSelectionOptionsByGroup(
   tracks: MediaPlaylist[],
-): Record<string, string[]> {
+): Record<string, MediaPlaylist[]> {
   return tracks.reduce((options, track) => {
-    const characteristics = track.attrs.CHARACTERISTICS;
-    const trackKey = `${track.name}-${track.lang}-${
-      characteristics ? '-' + characteristics : ''
-    }`;
     let option = options[track.groupId];
     if (!option) {
       options[track.groupId] = option = [];
     }
-    option.push(trackKey);
+    option.push(track);
     return options;
   }, {});
+}
+
+export function getSelectionOptionKey(track: MediaPlaylist): string {
+  return `${track.name}-${track.lang}${
+    track.characteristics ? '-' + track.characteristics : ''
+  }${track.channels ? '-' + track.channels : ''}`;
 }
 
 export function getCodecTiers(

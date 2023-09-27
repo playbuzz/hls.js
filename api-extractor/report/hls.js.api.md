@@ -2737,6 +2737,10 @@ export interface MediaPlaylist extends Omit<LevelParsed, 'attrs'> {
     // (undocumented)
     autoselect: boolean;
     // (undocumented)
+    channels?: string;
+    // (undocumented)
+    characteristics?: string;
+    // (undocumented)
     default: boolean;
     // (undocumented)
     forced: boolean;

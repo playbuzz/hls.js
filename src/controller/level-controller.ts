@@ -1,7 +1,3 @@
-/*
- * Level Controller
- */
-
 import {
   ManifestLoadedData,
   ManifestParsedData,
@@ -29,7 +25,10 @@ import {
 import BasePlaylistController from './base-playlist-controller';
 import { PlaylistContextType, PlaylistLevelType } from '../types/loader';
 import ContentSteeringController from './content-steering-controller';
-import { getSelectionOptionsByGroup } from '../utils/rendition-helper';
+import {
+  getSelectionOptionKey,
+  getSelectionOptionsByGroup,
+} from '../utils/rendition-helper';
 import { reassignFragmentLevelIndexes } from '../utils/level-helper';
 import { hlsDefaultConfig } from '../config';
 import type Hls from '../hls';
@@ -154,26 +153,28 @@ export default class LevelController extends BasePlaylistController {
         AUDIO,
         CODECS,
         'FRAME-RATE': FRAMERATE,
+        'HDCP-LEVEL': HDCP,
         'PATHWAY-ID': PATHWAY,
         RESOLUTION,
         SUBTITLES,
+        'VIDEO-RANGE': VIDEO_RANGE,
       } = attributes;
       const contentSteeringPrefix = __USE_CONTENT_STEERING__
         ? `${PATHWAY || '.'}-`
         : '';
-      let levelKey = `${contentSteeringPrefix}${levelParsed.bitrate}-${RESOLUTION}-${FRAMERATE}-${CODECS}`;
+      let levelKey = `${contentSteeringPrefix}${levelParsed.bitrate}-${RESOLUTION}-${FRAMERATE}-${CODECS}-${VIDEO_RANGE}-${HDCP}`;
 
       // Do not group levels with different audio or subtitle options in their respective groups (#5302)
       const audioOptions = AUDIO ? audioOptionsByGroup[AUDIO] : null;
       if (audioOptions) {
-        levelKey += `-${audioOptions.join(',')}`;
+        levelKey += `-${audioOptions.map(getSelectionOptionKey).join(',')}`;
       }
       const subtitleOptions =
         SUBTITLES && subtitleOptionsByGroup
           ? subtitleOptionsByGroup[SUBTITLES]
           : null;
       if (subtitleOptions) {
-        levelKey += `-${subtitleOptions.join(',')}`;
+        levelKey += `-${subtitleOptions.map(getSelectionOptionKey).join(',')}`;
       }
 
       levelFromSet = levelSet[levelKey];
@@ -182,9 +183,17 @@ export default class LevelController extends BasePlaylistController {
         levelSet[levelKey] = levelFromSet;
         levels.push(levelFromSet);
       } else {
+        if (levelParsed.url === levelFromSet.uri) {
+          // Either:
+          // 1. Redundant fallback is only for audio or subtitles
+          // 2. Missing distinguishing attributes in `levelKey`
+          // 3. Duplicate level in manifest (should discard, but not client's job)
+          this.warn(
+            `Redundant variant with matching attributes and URL found: (${levelKey})`,
+          );
+        }
         levelFromSet.addFallback(levelParsed);
       }
-
       addGroupId(levelFromSet, 'audio', AUDIO);
       addGroupId(levelFromSet, 'text', SUBTITLES);
     });

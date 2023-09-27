@@ -93,7 +93,7 @@ export function getMediaDecodingInfoPromise(
   if (audioCodecs && audioGroupId) {
     audioTracksByGroup.groups[audioGroupId]?.tracks.forEach((audioTrack) => {
       if (audioTrack.groupId === audioGroupId) {
-        const channels = audioTrack.attrs.CHANNELS || '';
+        const channels = audioTrack.channels || '';
         const channelsNumber = parseFloat(channels);
         if (Number.isFinite(channelsNumber) && channelsNumber > 2) {
           configurations.push.apply(
