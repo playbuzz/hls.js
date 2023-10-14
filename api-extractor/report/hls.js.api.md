@@ -112,6 +112,18 @@ export class AttrList {
 // @public (undocumented)
 export type AudioPlaylistType = 'AUDIO';
 
+// Warning: (ae-missing-release-tag) "AudioSelectionOption" is part of the package's API, but it is missing a release tag (@alpha, @beta, @public, or @internal)
+//
+// @public (undocumented)
+export type AudioSelectionOption = {
+    lang?: string;
+    characteristics?: string;
+    channels?: string;
+    name?: string;
+    audioCodec?: string;
+    groupId?: string;
+};
+
 // Warning: (ae-missing-release-tag) "AudioStreamController" is part of the package's API, but it is missing a release tag (@alpha, @beta, @public, or @internal)
 //
 // @public (undocumented)
@@ -176,6 +188,8 @@ export class AudioTrackController extends BasePlaylistController {
     // (undocumented)
     destroy(): void;
     // (undocumented)
+    protected findMatchingOption(audioOption: MediaPlaylist | AudioSelectionOption, audioTracks: MediaPlaylist[]): number;
+    // (undocumented)
     protected loadPlaylist(hlsUrlParameters?: HlsUrlParameters): void;
     // (undocumented)
     protected onAudioTrackLoaded(event: Events.AUDIO_TRACK_LOADED, data: AudioTrackLoadedData): void;
@@ -189,6 +203,8 @@ export class AudioTrackController extends BasePlaylistController {
     protected onManifestLoading(): void;
     // (undocumented)
     protected onManifestParsed(event: Events.MANIFEST_PARSED, data: ManifestParsedData): void;
+    // (undocumented)
+    setAudioOption(audioOption: MediaPlaylist | AudioSelectionOption | undefined): MediaPlaylist | null;
 }
 
 // Warning: (ae-missing-release-tag) "AudioTrackLoadedData" is part of the package's API, but it is missing a release tag (@alpha, @beta, @public, or @internal)
@@ -238,6 +254,8 @@ export class BasePlaylistController implements NetworkComponentAPI {
     protected clearTimer(): void;
     // (undocumented)
     destroy(): void;
+    // (undocumented)
+    protected findMatchingOption(option: MediaPlaylist | AudioSelectionOption | SubtitleSelectionOption, tracks: MediaPlaylist[], skipOptionPredicate?: (track: MediaPlaylist, option: MediaPlaylist | AudioSelectionOption | SubtitleSelectionOption) => boolean): number;
     // (undocumented)
     protected hls: Hls;
     // (undocumented)
@@ -1627,6 +1645,8 @@ class Hls implements HlsEventEmitter {
     // (undocumented)
     removeLevel(levelIndex: any, urlId?: number): void;
     resumeBuffering(): void;
+    setAudioOption(audioOption: MediaPlaylist | AudioSelectionOption | undefined): MediaPlaylist | null;
+    setSubtitleOption(subtitleOption: MediaPlaylist | SubtitleSelectionOption | undefined): MediaPlaylist | null;
     get startLevel(): number;
     // Warning: (ae-setter-with-docs) The doc comment for the property "startLevel" must appear on the getter, not the setter.
     set startLevel(newLevel: number);
@@ -1694,7 +1714,7 @@ export type HlsConfig = {
     fpsController: typeof FPSController;
     progressive: boolean;
     lowLatencyMode: boolean;
-} & ABRControllerConfig & BufferControllerConfig & CapLevelControllerConfig & EMEControllerConfig & FPSControllerConfig & LevelControllerConfig & MP4RemuxerConfig & StreamControllerConfig & LatencyControllerConfig & MetadataControllerConfig & TimelineControllerConfig & TSDemuxerConfig & HlsLoadPolicies & FragmentLoaderConfig & PlaylistLoaderConfig;
+} & ABRControllerConfig & BufferControllerConfig & CapLevelControllerConfig & EMEControllerConfig & FPSControllerConfig & LevelControllerConfig & MP4RemuxerConfig & StreamControllerConfig & SelectionPreferences & LatencyControllerConfig & MetadataControllerConfig & TimelineControllerConfig & TSDemuxerConfig & HlsLoadPolicies & FragmentLoaderConfig & PlaylistLoaderConfig;
 
 // Warning: (ae-missing-release-tag) "HlsEventEmitter" is part of the package's API, but it is missing a release tag (@alpha, @beta, @public, or @internal)
 //
@@ -2987,6 +3007,14 @@ export type RetryConfig = {
     shouldRetry?: (retryConfig: RetryConfig | null | undefined, retryCount: number, isTimeout: boolean, loaderResponse: LoaderResponse | undefined, retry: boolean) => boolean;
 };
 
+// Warning: (ae-missing-release-tag) "SelectionPreferences" is part of the package's API, but it is missing a release tag (@alpha, @beta, @public, or @internal)
+//
+// @public (undocumented)
+export type SelectionPreferences = {
+    audioPreference?: AudioSelectionOption;
+    subtitlePreference?: SubtitleSelectionOption;
+};
+
 // Warning: (ae-missing-release-tag) "SourceBufferName" is part of the package's API, but it is missing a release tag (@alpha, @beta, @public, or @internal)
 //
 // @public (undocumented)
@@ -3050,6 +3078,16 @@ export interface SubtitleFragProcessedData {
 // @public (undocumented)
 export type SubtitlePlaylistType = 'SUBTITLES' | 'CLOSED-CAPTIONS';
 
+// Warning: (ae-missing-release-tag) "SubtitleSelectionOption" is part of the package's API, but it is missing a release tag (@alpha, @beta, @public, or @internal)
+//
+// @public (undocumented)
+export type SubtitleSelectionOption = {
+    lang?: string;
+    characteristics?: string;
+    name?: string;
+    groupId?: string;
+};
+
 // Warning: (ae-missing-release-tag) "SubtitleStreamController" is part of the package's API, but it is missing a release tag (@alpha, @beta, @public, or @internal)
 //
 // @public (undocumented)
@@ -3105,6 +3143,8 @@ export class SubtitleTrackController extends BasePlaylistController {
     // (undocumented)
     destroy(): void;
     // (undocumented)
+    protected findMatchingOption(subtitleOption: MediaPlaylist | SubtitleSelectionOption, subtitleTracks: MediaPlaylist[]): number;
+    // (undocumented)
     protected loadPlaylist(hlsUrlParameters?: HlsUrlParameters): void;
     // (undocumented)
     protected onError(event: Events.ERROR, data: ErrorData): void;
@@ -3122,6 +3162,8 @@ export class SubtitleTrackController extends BasePlaylistController {
     protected onMediaDetaching(): void;
     // (undocumented)
     protected onSubtitleTrackLoaded(event: Events.SUBTITLE_TRACK_LOADED, data: TrackLoadedData): void;
+    // (undocumented)
+    setSubtitleOption(subtitleOption: MediaPlaylist | SubtitleSelectionOption | undefined): MediaPlaylist | null;
     // (undocumented)
     get subtitleDisplay(): boolean;
     set subtitleDisplay(value: boolean);

@@ -4,7 +4,10 @@ import { ErrorTypes, ErrorDetails } from '../errors';
 import { PlaylistContextType } from '../types/loader';
 import { mediaAttributesIdentical } from '../utils/media-option-attributes';
 import type Hls from '../hls';
-import type { MediaPlaylist } from '../types/media-playlist';
+import type {
+  AudioSelectionOption,
+  MediaPlaylist,
+} from '../types/media-playlist';
 import type { HlsUrlParameters } from '../types/level';
 import type {
   ManifestParsedData,
@@ -118,7 +121,7 @@ class AudioTrackController extends BasePlaylistController {
     }
     const audioGroups = levelInfo.audioGroups || null;
     const currentGroups = this.groupIds;
-    const currentTrack = this.currentTrack;
+    let currentTrack = this.currentTrack;
     if (
       !audioGroups ||
       currentGroups?.length !== audioGroups?.length ||
@@ -147,6 +150,11 @@ class AudioTrackController extends BasePlaylistController {
       } else if (!currentTrack && !this.tracksInGroup.length) {
         // Do not dispatch AUDIO_TRACKS_UPDATED when there were and are no tracks
         return;
+      }
+
+      const audioPreference = this.hls.config.audioPreference;
+      if (!currentTrack) {
+        currentTrack = this.setAudioOption(audioPreference);
       }
 
       this.tracksInGroup = audioTracks;
@@ -220,6 +228,65 @@ class AudioTrackController extends BasePlaylistController {
     this.setAudioTrack(newId);
   }
 
+  public setAudioOption(
+    audioOption: MediaPlaylist | AudioSelectionOption | undefined,
+  ): MediaPlaylist | null {
+    this.hls.config.audioPreference = audioOption;
+    if (audioOption) {
+      this.selectDefaultTrack = false;
+      if (this.allAudioTracks.length) {
+        const groupIndex = this.findMatchingOption(
+          audioOption,
+          this.tracksInGroup,
+        );
+        if (groupIndex > -1) {
+          const track = this.tracksInGroup[groupIndex];
+          this.setAudioTrack(groupIndex);
+          return track;
+        } else {
+          const allIndex = this.findMatchingOption(
+            audioOption,
+            this.allAudioTracks,
+          );
+          if (allIndex > -1) {
+            // Now we need to switch levels to acheive the switch
+            // this.hls.levels
+            return this.allAudioTracks[allIndex];
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  protected findMatchingOption(
+    audioOption: MediaPlaylist | AudioSelectionOption,
+    audioTracks: MediaPlaylist[],
+  ): number {
+    return super.findMatchingOption(
+      audioOption,
+      audioTracks,
+      (track: MediaPlaylist, option: MediaPlaylist | AudioSelectionOption) => {
+        const { audioCodec, channels } = option;
+        if (audioCodec && track.audioCodec !== audioCodec) {
+          // skip tracks with different audio codec family
+          const trackCodec = track.audioCodec || '';
+          if (trackCodec.substring(0, 4) !== audioCodec.substring(0, 4)) {
+            return true;
+          }
+        }
+        if (channels && track.channels !== channels) {
+          // skip tracks with more audio channels
+          const trackChannels = track.channels ? parseFloat(track.channels) : 2;
+          if (trackChannels > parseFloat(channels)) {
+            return true;
+          }
+        }
+        return false;
+      },
+    );
+  }
+
   private setAudioTrack(newId: number): void {
     const tracks = this.tracksInGroup;
 
@@ -264,21 +331,31 @@ class AudioTrackController extends BasePlaylistController {
         !currentTrack ||
         mediaAttributesIdentical(currentTrack.attrs, track.attrs)
       ) {
-        return track.id;
+        return i;
       }
-      if (
-        mediaAttributesIdentical(currentTrack.attrs, track.attrs, [
-          'LANGUAGE',
-          'ASSOC-LANGUAGE',
-          'CHARACTERISTICS',
-        ])
-      ) {
-        return track.id;
+    }
+    if (currentTrack) {
+      for (let i = 0; i < audioTracks.length; i++) {
+        const track = audioTracks[i];
+        if (
+          mediaAttributesIdentical(currentTrack.attrs, track.attrs, [
+            'LANGUAGE',
+            'ASSOC-LANGUAGE',
+            'CHARACTERISTICS',
+          ])
+        ) {
+          return i;
+        }
       }
-      if (
-        mediaAttributesIdentical(currentTrack.attrs, track.attrs, ['LANGUAGE'])
-      ) {
-        return track.id;
+      for (let i = 0; i < audioTracks.length; i++) {
+        const track = audioTracks[i];
+        if (
+          mediaAttributesIdentical(currentTrack.attrs, track.attrs, [
+            'LANGUAGE',
+          ])
+        ) {
+          return i;
+        }
       }
     }
     return -1;

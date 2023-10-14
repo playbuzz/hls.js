@@ -7,7 +7,11 @@ import { getRetryDelay, isTimeoutError } from '../utils/error-helper';
 import { NetworkErrorAction } from './error-controller';
 import { logger } from '../utils/logger';
 import type { LevelDetails } from '../loader/level-details';
-import type { MediaPlaylist } from '../types/media-playlist';
+import type {
+  AudioSelectionOption,
+  MediaPlaylist,
+  SubtitleSelectionOption,
+} from '../types/media-playlist';
 import type {
   AudioTrackLoadedData,
   LevelLoadedData,
@@ -346,5 +350,37 @@ export default class BasePlaylistController implements NetworkComponentAPI {
       errorAction.resolved = true;
     }
     return retry;
+  }
+
+  protected findMatchingOption(
+    option: MediaPlaylist | AudioSelectionOption | SubtitleSelectionOption,
+    tracks: MediaPlaylist[],
+    skipOptionPredicate?: (
+      track: MediaPlaylist,
+      option: MediaPlaylist | AudioSelectionOption | SubtitleSelectionOption,
+    ) => boolean,
+  ): number {
+    if ('attrs' in option) {
+      const index = tracks.indexOf(option);
+      if (index !== -1) {
+        return index;
+      }
+    }
+    const { groupId, name, lang, characteristics } = option;
+    for (let i = 0; i < tracks.length; i++) {
+      const track = tracks[i];
+      if (skipOptionPredicate && skipOptionPredicate(track, option)) {
+        continue;
+      }
+      if (
+        (groupId === undefined || track.groupId === groupId) &&
+        (name === undefined || track.name === name) &&
+        (lang === undefined || track.lang === lang) &&
+        track.characteristics === characteristics // TODO: characteristics can be list
+      ) {
+        return i;
+      }
+    }
+    return -1;
   }
 }

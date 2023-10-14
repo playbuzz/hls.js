@@ -13,6 +13,22 @@ export type SubtitlePlaylistType = 'SUBTITLES' | 'CLOSED-CAPTIONS';
 
 export type MediaPlaylistType = MainPlaylistType | SubtitlePlaylistType;
 
+export type AudioSelectionOption = {
+  lang?: string;
+  characteristics?: string;
+  channels?: string;
+  name?: string;
+  audioCodec?: string;
+  groupId?: string;
+};
+
+export type SubtitleSelectionOption = {
+  lang?: string;
+  characteristics?: string;
+  name?: string;
+  groupId?: string;
+};
+
 // audioTracks, captions and subtitles returned by `M3U8Parser.parseMasterPlaylistMedia`
 export interface MediaPlaylist extends Omit<LevelParsed, 'attrs'> {
   attrs: MediaAttributes;

@@ -10,7 +10,10 @@ import {
   subtitleTrackMatchesTextTrack,
 } from '../utils/media-option-attributes';
 import type Hls from '../hls';
-import type { MediaPlaylist } from '../types/media-playlist';
+import type {
+  MediaPlaylist,
+  SubtitleSelectionOption,
+} from '../types/media-playlist';
 import type { HlsUrlParameters } from '../types/level';
 import type {
   ErrorData,
@@ -212,7 +215,7 @@ class SubtitleTrackController extends BasePlaylistController {
     }
     const subtitleGroups = levelInfo.subtitleGroups || null;
     const currentGroups = this.groupIds;
-    const currentTrack = this.currentTrack;
+    let currentTrack = this.currentTrack;
     if (
       !subtitleGroups ||
       currentGroups?.length !== subtitleGroups?.length ||
@@ -227,7 +230,7 @@ class SubtitleTrackController extends BasePlaylistController {
           !subtitleGroups || subtitleGroups.indexOf(track.groupId) !== -1,
       );
       if (subtitleTracks.length) {
-        // Disable selectDefaultTrack if there are no default tracks
+        // Disable selectDefaultTrack if there are no default or forced tracks
         if (
           this.selectDefaultTrack &&
           !subtitleTracks.some(
@@ -243,6 +246,11 @@ class SubtitleTrackController extends BasePlaylistController {
       } else if (!currentTrack && !this.tracksInGroup.length) {
         // Do not dispatch SUBTITLE_TRACKS_UPDATED when there were and are no tracks
         return;
+      }
+
+      const subtitlePreference = this.hls.config.subtitlePreference;
+      if (!currentTrack) {
+        currentTrack = this.setSubtitleOption(subtitlePreference);
       }
 
       this.tracksInGroup = subtitleTracks;
@@ -288,21 +296,31 @@ class SubtitleTrackController extends BasePlaylistController {
         !currentTrack ||
         mediaAttributesIdentical(currentTrack.attrs, track.attrs)
       ) {
-        return track.id;
+        return i;
       }
-      if (
-        mediaAttributesIdentical(currentTrack.attrs, track.attrs, [
-          'LANGUAGE',
-          'ASSOC-LANGUAGE',
-          'CHARACTERISTICS',
-        ])
-      ) {
-        return track.id;
+    }
+    if (currentTrack) {
+      for (let i = 0; i < tracks.length; i++) {
+        const track = tracks[i];
+        if (
+          mediaAttributesIdentical(currentTrack.attrs, track.attrs, [
+            'LANGUAGE',
+            'ASSOC-LANGUAGE',
+            'CHARACTERISTICS',
+          ])
+        ) {
+          return i;
+        }
       }
-      if (
-        mediaAttributesIdentical(currentTrack.attrs, track.attrs, ['LANGUAGE'])
-      ) {
-        return track.id;
+      for (let i = 0; i < tracks.length; i++) {
+        const track = tracks[i];
+        if (
+          mediaAttributesIdentical(currentTrack.attrs, track.attrs, [
+            'LANGUAGE',
+          ])
+        ) {
+          return i;
+        }
       }
     }
     return -1;
@@ -352,6 +370,42 @@ class SubtitleTrackController extends BasePlaylistController {
   set subtitleTrack(newId: number) {
     this.selectDefaultTrack = false;
     this.setSubtitleTrack(newId);
+  }
+
+  public setSubtitleOption(
+    subtitleOption: MediaPlaylist | SubtitleSelectionOption | undefined,
+  ): MediaPlaylist | null {
+    this.hls.config.subtitlePreference = subtitleOption;
+    if (subtitleOption) {
+      this.selectDefaultTrack = false;
+      if (this.allSubtitleTracks.length) {
+        const groupIndex = this.findMatchingOption(
+          subtitleOption,
+          this.tracksInGroup,
+        );
+        if (groupIndex > -1) {
+          const track = this.tracksInGroup[groupIndex];
+          this.setSubtitleTrack(groupIndex);
+          return track;
+        } else {
+          const allIndex = this.findMatchingOption(
+            subtitleOption,
+            this.allSubtitleTracks,
+          );
+          if (allIndex > -1) {
+            return this.allSubtitleTracks[allIndex];
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  protected findMatchingOption(
+    subtitleOption: MediaPlaylist | SubtitleSelectionOption,
+    subtitleTracks: MediaPlaylist[],
+  ): number {
+    return super.findMatchingOption(subtitleOption, subtitleTracks);
   }
 
   protected loadPlaylist(hlsUrlParameters?: HlsUrlParameters): void {
