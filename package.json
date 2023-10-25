@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/video-dev/hls.js/issues"
   },
-  "browser": "./dist/hls.js",
+  "main": "./dist/hls.js",
   "module": "./dist/hls.mjs",
   "types": "./dist/hls.js.d.ts",
   "exports": {
