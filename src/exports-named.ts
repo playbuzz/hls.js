@@ -16,6 +16,8 @@ import ErrorController from './controller/error-controller';
 import FPSController from './controller/fps-controller';
 import SubtitleTrackController from './controller/subtitle-track-controller';
 
+export default Hls;
+
 export {
   Hls,
   ErrorDetails,
