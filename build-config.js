@@ -1,5 +1,3 @@
-const path = require('path');
-const importHelper = require('@babel/helper-module-imports');
 const { nodeResolve } = require('@rollup/plugin-node-resolve');
 const commonjs = require('@rollup/plugin-commonjs');
 const babel = require('@rollup/plugin-babel');
