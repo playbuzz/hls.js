@@ -1,5 +1,3 @@
-const path = require('path');
-const importHelper = require('@babel/helper-module-imports');
 const { nodeResolve } = require('@rollup/plugin-node-resolve');
 const commonjs = require('@rollup/plugin-commonjs');
 const babel = require('@rollup/plugin-babel');
@@ -29,18 +27,15 @@ const buildTypeToOutputName = {
   light: `hls.light`,
 };
 
-/* Allow to customise builds through env-vars */
 // eslint-disable-next-line no-undef
 const env = process.env;
 
-const addSubtitleSupport = !!env.SUBTITLE || !!env.USE_SUBTITLES;
-const addAltAudioSupport = !!env.ALT_AUDIO || !!env.USE_ALT_AUDIO;
-const addEMESupport = !!env.EME_DRM || !!env.USE_EME_DRM;
-const addCMCDSupport = !!env.CMCD || !!env.USE_CMCD;
-const addContentSteeringSupport =
-  !!env.CONTENT_STEERING || !!env.USE_CONTENT_STEERING;
-const addVariableSubstitutionSupport =
-  !!env.VARIABLE_SUBSTITUTION || !!env.USE_VARIABLE_SUBSTITUTION;
+const addSubtitleSupport = false;
+const addAltAudioSupport = false;
+const addEMESupport = false;
+const addCMCDSupport = false;
+const addContentSteeringSupport = false;
+const addVariableSubstitutionSupport = true;
 
 const shouldBundleWorker = (format) => format !== FORMAT.esm;
 
@@ -48,20 +43,12 @@ const buildConstants = (type, additional = {}) => ({
   preventAssignment: true,
   values: {
     __VERSION__: JSON.stringify(pkgJson.version),
-    __USE_SUBTITLES__: JSON.stringify(
-      type === BUILD_TYPE.full || addSubtitleSupport
-    ),
-    __USE_ALT_AUDIO__: JSON.stringify(
-      type === BUILD_TYPE.full || addAltAudioSupport
-    ),
-    __USE_EME_DRM__: JSON.stringify(type === BUILD_TYPE.full || addEMESupport),
-    __USE_CMCD__: JSON.stringify(type === BUILD_TYPE.full || addCMCDSupport),
-    __USE_CONTENT_STEERING__: JSON.stringify(
-      type === BUILD_TYPE.full || addContentSteeringSupport
-    ),
-    __USE_VARIABLE_SUBSTITUTION__: JSON.stringify(
-      type === BUILD_TYPE.full || addVariableSubstitutionSupport
-    ),
+    __USE_SUBTITLES__: JSON.stringify(addSubtitleSupport), // 45k
+    __USE_ALT_AUDIO__: JSON.stringify(addAltAudioSupport), // 18k
+    __USE_EME_DRM__: JSON.stringify(addEMESupport), // 22k
+    __USE_CMCD__: JSON.stringify(addCMCDSupport), // 6kb
+    __USE_CONTENT_STEERING__: JSON.stringify(addContentSteeringSupport), // 7kb
+    __USE_VARIABLE_SUBSTITUTION__: JSON.stringify(addVariableSubstitutionSupport), // 2k
     ...additional,
   },
 });
@@ -72,13 +59,13 @@ const workerFnFooter = '})(false);';
 const extensions = ['.ts', '.js'];
 
 const babelPresetEnvTargets = {
-  chrome: '47',
-  firefox: '51',
-  safari: '8',
-  ios: '8',
-  android: '4',
-  samsung: '5',
-  edge: '14',
+  chrome: '100',
+  firefox: '70',
+  safari: '12',
+  ios: '12',
+  android: '10',
+  samsung: '9',
+  edge: '20',
 };
 
 const babelTsWithPresetEnvTargets = ({ targets, stripConsole }) =>
@@ -107,47 +94,16 @@ const babelTsWithPresetEnvTargets = ({ targets, stripConsole }) =>
       ],
     ],
     plugins: [
-      [
-        '@babel/plugin-proposal-class-properties',
-        {
-          loose: true,
-        },
-      ],
-      '@babel/plugin-proposal-object-rest-spread',
-      {
-        visitor: {
-          CallExpression: function (espath) {
-            if (espath.get('callee').matchesPattern('Number.isFinite')) {
-              espath.node.callee = importHelper.addNamed(
-                espath,
-                'isFiniteNumber',
-                path.resolve('src/polyfills/number')
-              );
-            } else if (
-              espath.get('callee').matchesPattern('Number.MAX_SAFE_INTEGER')
-            ) {
-              espath.node.callee = importHelper.addNamed(
-                espath,
-                'MAX_SAFE_INTEGER',
-                path.resolve('src/polyfills/number')
-              );
-            }
-          },
-        },
-      },
-      ['@babel/plugin-transform-object-assign'],
-      ['@babel/plugin-proposal-optional-chaining'],
-
       ...(stripConsole
         ? [
-            [
-              // Strip console.assert statements from build targets
-              'transform-remove-console',
-              {
-                exclude: ['log', 'warn', 'error'],
-              },
-            ],
-          ]
+          [
+            // Strip console.assert statements from build targets
+            'transform-remove-console',
+            {
+              exclude: ['log', 'warn', 'error'],
+            },
+          ],
+        ]
         : []),
     ],
   });
@@ -165,7 +121,7 @@ const basePlugins = [
   nodeResolve({
     extensions,
     browser: true,
-    preferBuiltins: false,
+    preferBuiltins: true,
   }),
   commonjs({ transformMixedEsModules: true }),
 ];
@@ -237,15 +193,19 @@ const buildRollupConfig = ({
     },
     output: {
       name: 'Hls',
+      globals: {
+        Hls: 'Hls'
+      },
+      extend: true,
       file: outputFile
         ? outputFile
         : minified
-        ? `./dist/${outputName}.min.${extension}`
-        : `./dist/${outputName}.${extension}`,
-      format,
+          ? `./dist/${outputName}.min.${extension}`
+          : `./dist/${outputName}.${extension}`,
+      format: format,
       banner: shouldBundleWorker(format) ? workerFnBanner : null,
       footer: shouldBundleWorker(format) ? workerFnFooter : null,
-      sourcemap,
+      sourcemap: !minified,
       sourcemapFile: minified
         ? `${outputName}.${extension}.min.map`
         : `${outputName}.${extension}.map`,
@@ -273,18 +233,18 @@ const buildRollupConfig = ({
 const configs = Object.entries({
   full: buildRollupConfig({
     type: BUILD_TYPE.full,
-    format: FORMAT.umd,
+    format: FORMAT.iife,
     minified: false,
   }),
   fullMin: buildRollupConfig({
     type: BUILD_TYPE.full,
-    format: FORMAT.umd,
+    format: FORMAT.iife,
     minified: true,
   }),
   fullEsm: buildRollupConfig({
     type: BUILD_TYPE.full,
     format: FORMAT.esm,
-    minified: false,
+    minified: true,
   }),
   light: buildRollupConfig({
     type: BUILD_TYPE.light,
@@ -311,7 +271,7 @@ const configs = Object.entries({
       name: 'HlsWorker',
       file: './dist/hls.worker.js',
       format: FORMAT.iife,
-      sourcemap: true,
+      sourcemap: false,
       sourcemapFile: 'hls.worker.js.map',
     },
     plugins: [
@@ -349,9 +309,9 @@ const configs = Object.entries({
           __CLOUDFLARE_PAGES__: JSON.stringify(
             env.CF_PAGES
               ? {
-                  branch: env.CF_PAGES_BRANCH,
-                  commitRef: env.CF_PAGES_COMMIT_SHA,
-                }
+                branch: env.CF_PAGES_BRANCH,
+                commitRef: env.CF_PAGES_COMMIT_SHA,
+              }
               : null
           ),
         },
