@@ -49,9 +49,7 @@ const buildConstants = (type, additional = {}) => ({
     __USE_EME_DRM__: JSON.stringify(addEMESupport), // 22k
     __USE_CMCD__: JSON.stringify(addCMCDSupport), // 6kb
     __USE_CONTENT_STEERING__: JSON.stringify(addContentSteeringSupport), // 7kb
-    __USE_VARIABLE_SUBSTITUTION__: JSON.stringify(
-      addVariableSubstitutionSupport
-    ), // 2k
+    __USE_VARIABLE_SUBSTITUTION__: JSON.stringify(addVariableSubstitutionSupport), // 2k
     ...additional,
   },
 });
@@ -203,8 +201,8 @@ const buildRollupConfig = ({
       file: outputFile
         ? outputFile
         : minified
-        ? `./dist/${outputName}.min.${extension}`
-        : `./dist/${outputName}.${extension}`,
+          ? `./dist/${outputName}.min.${extension}`
+          : `./dist/${outputName}.${extension}`,
       format: format,
       banner: shouldBundleWorker(format) ? workerFnBanner : null,
       footer: shouldBundleWorker(format) ? workerFnFooter : null,
