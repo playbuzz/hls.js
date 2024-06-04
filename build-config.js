@@ -30,8 +30,9 @@ const buildTypeToOutputName = {
 // eslint-disable-next-line no-undef
 const env = process.env;
 
+// Set addSubtitleSupport to true if you want to build an exco version with subtitles support (X.X.XX.ST-exco)
 const addSubtitleSupport = false;
-const addAltAudioSupport = false;
+const addAltAudioSupport = true;
 const addEMESupport = false;
 const addCMCDSupport = false;
 const addContentSteeringSupport = false;
@@ -48,7 +49,9 @@ const buildConstants = (type, additional = {}) => ({
     __USE_EME_DRM__: JSON.stringify(addEMESupport), // 22k
     __USE_CMCD__: JSON.stringify(addCMCDSupport), // 6kb
     __USE_CONTENT_STEERING__: JSON.stringify(addContentSteeringSupport), // 7kb
-    __USE_VARIABLE_SUBSTITUTION__: JSON.stringify(addVariableSubstitutionSupport), // 2k
+    __USE_VARIABLE_SUBSTITUTION__: JSON.stringify(
+      addVariableSubstitutionSupport
+    ), // 2k
     ...additional,
   },
 });
@@ -96,14 +99,14 @@ const babelTsWithPresetEnvTargets = ({ targets, stripConsole }) =>
     plugins: [
       ...(stripConsole
         ? [
-          [
-            // Strip console.assert statements from build targets
-            'transform-remove-console',
-            {
-              exclude: ['log', 'warn', 'error'],
-            },
-          ],
-        ]
+            [
+              // Strip console.assert statements from build targets
+              'transform-remove-console',
+              {
+                exclude: ['log', 'warn', 'error'],
+              },
+            ],
+          ]
         : []),
     ],
   });
@@ -194,14 +197,14 @@ const buildRollupConfig = ({
     output: {
       name: 'Hls',
       globals: {
-        Hls: 'Hls'
+        Hls: 'Hls',
       },
       extend: true,
       file: outputFile
         ? outputFile
         : minified
-          ? `./dist/${outputName}.min.${extension}`
-          : `./dist/${outputName}.${extension}`,
+        ? `./dist/${outputName}.min.${extension}`
+        : `./dist/${outputName}.${extension}`,
       format: format,
       banner: shouldBundleWorker(format) ? workerFnBanner : null,
       footer: shouldBundleWorker(format) ? workerFnFooter : null,
@@ -309,9 +312,9 @@ const configs = Object.entries({
           __CLOUDFLARE_PAGES__: JSON.stringify(
             env.CF_PAGES
               ? {
-                branch: env.CF_PAGES_BRANCH,
-                commitRef: env.CF_PAGES_COMMIT_SHA,
-              }
+                  branch: env.CF_PAGES_BRANCH,
+                  commitRef: env.CF_PAGES_COMMIT_SHA,
+                }
               : null
           ),
         },
