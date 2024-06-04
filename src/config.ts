@@ -244,6 +244,7 @@ export type TSDemuxerConfig = {
 export type HlsConfig = {
   debug: boolean | ILogger;
   enableWorker: boolean;
+  maxLevelCapping: number;
   workerPath: null | string;
   enableSoftwareAES: boolean;
   minAutoBitrate: number;
@@ -310,6 +311,7 @@ export const hlsDefaultConfig: HlsConfig = {
   startPosition: -1, // used by stream-controller
   defaultAudioCodec: undefined, // used by stream-controller
   debug: false, // used by logger
+  maxLevelCapping: -1,
   capLevelOnFPSDrop: false, // used by fps-controller
   capLevelToPlayerSize: false, // used by cap-level-controller
   ignoreDevicePixelRatio: false, // used by cap-level-controller

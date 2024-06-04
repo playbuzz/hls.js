@@ -18,6 +18,7 @@ type RestrictedLevel = { width: number; height: number; bitrate: number };
 class CapLevelController implements ComponentAPI {
   private hls: Hls;
   private autoLevelCapping: number;
+  private maxLevelCapping: number;
   private firstLevel: number;
   private media: HTMLVideoElement | null;
   private restrictedLevels: RestrictedLevel[];
@@ -28,6 +29,7 @@ class CapLevelController implements ComponentAPI {
   constructor(hls: Hls) {
     this.hls = hls;
     this.autoLevelCapping = Number.POSITIVE_INFINITY;
+    this.maxLevelCapping = this.hls.config.maxLevelCapping;
     this.firstLevel = -1;
     this.media = null;
     this.restrictedLevels = [];
@@ -156,11 +158,17 @@ class CapLevelController implements ComponentAPI {
     );
 
     this.clientRect = null;
-    return CapLevelController.getMaxLevelByMediaSize(
+    const maxLevelByMediaSize = CapLevelController.getMaxLevelByMediaSize(
       validLevels,
       this.mediaWidth,
       this.mediaHeight
     );
+
+    if (this.maxLevelCapping !== -1) {
+      return Math.min(this.maxLevelCapping, maxLevelByMediaSize);
+    }
+
+    return maxLevelByMediaSize;
   }
 
   startCapping() {
