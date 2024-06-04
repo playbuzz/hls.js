@@ -30,8 +30,9 @@ const buildTypeToOutputName = {
 // eslint-disable-next-line no-undef
 const env = process.env;
 
+// Set addSubtitleSupport to true if you want to build an exco version with subtitles support (X.X.XX.ST-exco)
 const addSubtitleSupport = false;
-const addAltAudioSupport = false;
+const addAltAudioSupport = true;
 const addEMESupport = false;
 const addCMCDSupport = false;
 const addContentSteeringSupport = false;
@@ -96,14 +97,14 @@ const babelTsWithPresetEnvTargets = ({ targets, stripConsole }) =>
     plugins: [
       ...(stripConsole
         ? [
-          [
-            // Strip console.assert statements from build targets
-            'transform-remove-console',
-            {
-              exclude: ['log', 'warn', 'error'],
-            },
-          ],
-        ]
+            [
+              // Strip console.assert statements from build targets
+              'transform-remove-console',
+              {
+                exclude: ['log', 'warn', 'error'],
+              },
+            ],
+          ]
         : []),
     ],
   });
@@ -194,7 +195,7 @@ const buildRollupConfig = ({
     output: {
       name: 'Hls',
       globals: {
-        Hls: 'Hls'
+        Hls: 'Hls',
       },
       extend: true,
       file: outputFile
@@ -309,9 +310,9 @@ const configs = Object.entries({
           __CLOUDFLARE_PAGES__: JSON.stringify(
             env.CF_PAGES
               ? {
-                branch: env.CF_PAGES_BRANCH,
-                commitRef: env.CF_PAGES_COMMIT_SHA,
-              }
+                  branch: env.CF_PAGES_BRANCH,
+                  commitRef: env.CF_PAGES_COMMIT_SHA,
+                }
               : null
           ),
         },
