@@ -30,7 +30,8 @@ const buildTypeToOutputName = {
 // eslint-disable-next-line no-undef
 const env = process.env;
 
-const addSubtitleSupport = true;
+// Set addSubtitleSupport to true if you want to build an exco version with subtitles support (X.X.XX.ST-exco)
+const addSubtitleSupport = false;
 const addAltAudioSupport = true;
 const addEMESupport = false;
 const addCMCDSupport = false;
