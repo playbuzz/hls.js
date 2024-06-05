@@ -534,6 +534,21 @@ export default class Hls implements HlsEventEmitter {
   }
 
   /**
+   * Return "maxLevelCapping"
+   */
+  get maxLevelCapping(): number {
+    return this.config.maxLevelCapping;
+  }
+
+  /**
+   * Sets "maxLevelCapping"
+   */
+  set maxLevelCapping(newLevel: number) {
+    logger.log(`set maxLevelCapping:${newLevel}`);
+    this.config.maxLevelCapping = newLevel;
+  }
+
+  /**
    * Return start level (level of first fragment that will be played back)
    * if not overrided by user, first level appearing in manifest will be used as start level
    * if -1 : automatic start level selection, playback will start from level matching download bandwidth
