@@ -1,5 +1,3 @@
-const path = require('path');
-const importHelper = require('@babel/helper-module-imports');
 const { nodeResolve } = require('@rollup/plugin-node-resolve');
 const commonjs = require('@rollup/plugin-commonjs');
 const babel = require('@rollup/plugin-babel');
@@ -29,22 +27,17 @@ const buildTypeToOutputName = {
   light: `hls.light`,
 };
 
-/* Allow to customize builds through env-vars */
 // eslint-disable-next-line no-undef
 const env = process.env;
 
-const addSubtitleSupport = !!env.SUBTITLE || !!env.USE_SUBTITLES;
-const addAltAudioSupport = !!env.ALT_AUDIO || !!env.USE_ALT_AUDIO;
-const addEMESupport = !!env.EME_DRM || !!env.USE_EME_DRM;
-const addCMCDSupport = !!env.CMCD || !!env.USE_CMCD;
-const addContentSteeringSupport =
-  !!env.CONTENT_STEERING || !!env.USE_CONTENT_STEERING;
-const addVariableSubstitutionSupport =
-  !!env.VARIABLE_SUBSTITUTION || !!env.USE_VARIABLE_SUBSTITUTION;
-const addM2TSAdvancedCodecSupport =
-  !!env.M2TS_ADVANCED_CODECS || !!env.USE_M2TS_ADVANCED_CODECS;
-const addMediaCapabilitiesSupport =
-  !!env.MEDIA_CAPABILITIES || !!env.USE_MEDIA_CAPABILITIES;
+const addSubtitleSupport = false;
+const addAltAudioSupport = true;
+const addEMESupport = false;
+const addCMCDSupport = false;
+const addContentSteeringSupport = false;
+const addVariableSubstitutionSupport = true;
+const addM2TSAdvancedCodecSupport = true;
+const addMediaCapabilitiesSupport = false;
 
 const shouldBundleWorker = (format) => format !== FORMAT.esm;
 
@@ -52,27 +45,16 @@ const buildConstants = (type, additional = {}) => ({
   preventAssignment: true,
   values: {
     __VERSION__: JSON.stringify(pkgJson.version),
-    __USE_SUBTITLES__: JSON.stringify(
-      type === BUILD_TYPE.full || addSubtitleSupport,
-    ),
-    __USE_ALT_AUDIO__: JSON.stringify(
-      type === BUILD_TYPE.full || addAltAudioSupport,
-    ),
-    __USE_EME_DRM__: JSON.stringify(type === BUILD_TYPE.full || addEMESupport),
-    __USE_CMCD__: JSON.stringify(type === BUILD_TYPE.full || addCMCDSupport),
-    __USE_CONTENT_STEERING__: JSON.stringify(
-      type === BUILD_TYPE.full || BUILD_TYPE.light || addContentSteeringSupport,
-    ),
+    __USE_SUBTITLES__: JSON.stringify(addSubtitleSupport),
+    __USE_ALT_AUDIO__: JSON.stringify(addAltAudioSupport),
+    __USE_EME_DRM__: JSON.stringify(addEMESupport),
+    __USE_CMCD__: JSON.stringify(addCMCDSupport),
+    __USE_CONTENT_STEERING__: JSON.stringify(addContentSteeringSupport),
     __USE_VARIABLE_SUBSTITUTION__: JSON.stringify(
-      type === BUILD_TYPE.full || addVariableSubstitutionSupport,
+      addVariableSubstitutionSupport,
     ),
-    __USE_M2TS_ADVANCED_CODECS__: JSON.stringify(
-      type === BUILD_TYPE.full || addM2TSAdvancedCodecSupport,
-    ),
-    __USE_MEDIA_CAPABILITIES__: JSON.stringify(
-      type === BUILD_TYPE.full || addMediaCapabilitiesSupport,
-    ),
-
+    __USE_M2TS_ADVANCED_CODECS__: JSON.stringify(addM2TSAdvancedCodecSupport),
+    __USE_MEDIA_CAPABILITIES__: JSON.stringify(addMediaCapabilitiesSupport),
     ...additional,
   },
 });
@@ -96,13 +78,13 @@ const workerFnFooter = '})(false);';
 const extensions = ['.ts', '.js'];
 
 const babelPresetEnvTargets = {
-  chrome: '47',
-  firefox: '51',
-  safari: '8',
-  ios: '8',
-  android: '4',
-  samsung: '5',
-  edge: '14',
+  chrome: '100',
+  firefox: '70',
+  safari: '12',
+  ios: '12',
+  android: '10',
+  samsung: '9',
+  edge: '20',
 };
 
 const babelTsWithPresetEnvTargets = ({ targets, stripConsole }) =>
@@ -131,45 +113,6 @@ const babelTsWithPresetEnvTargets = ({ targets, stripConsole }) =>
       ],
     ],
     plugins: [
-      [
-        '@babel/plugin-proposal-class-properties',
-        {
-          loose: true,
-        },
-      ],
-      '@babel/plugin-proposal-object-rest-spread',
-      {
-        visitor: {
-          CallExpression: function (espath) {
-            if (espath.get('callee').matchesPattern('Number.isFinite')) {
-              espath.node.callee = importHelper.addNamed(
-                espath,
-                'isFiniteNumber',
-                path.resolve('src/polyfills/number'),
-              );
-            } else if (
-              espath.get('callee').matchesPattern('Number.isSafeInteger')
-            ) {
-              espath.node.callee = importHelper.addNamed(
-                espath,
-                'isSafeInteger',
-                path.resolve('src/polyfills/number'),
-              );
-            } else if (
-              espath.get('callee').matchesPattern('Number.MAX_SAFE_INTEGER')
-            ) {
-              espath.node.callee = importHelper.addNamed(
-                espath,
-                'MAX_SAFE_INTEGER',
-                path.resolve('src/polyfills/number'),
-              );
-            }
-          },
-        },
-      },
-      ['@babel/plugin-transform-object-assign'],
-      ['@babel/plugin-proposal-optional-chaining'],
-
       ...(stripConsole
         ? [
             [
@@ -197,7 +140,7 @@ const basePlugins = [
   nodeResolve({
     extensions,
     browser: true,
-    preferBuiltins: false,
+    preferBuiltins: true,
   }),
   commonjs({ transformMixedEsModules: true }),
 ];
@@ -269,7 +212,6 @@ const buildRollupConfig = ({
   format,
   allowCircularDeps,
   includeCoverage,
-  sourcemap = true,
   outputFile = null,
   input = './src/exports-default.ts',
 }) => {
@@ -281,15 +223,19 @@ const buildRollupConfig = ({
     onLog: buildOnLog({ allowCircularDeps }),
     output: {
       name: 'Hls',
+      globals: {
+        Hls: 'Hls',
+      },
+      extend: true,
       file: outputFile
         ? outputFile
         : minified
           ? `./dist/${outputName}.min.${extension}`
           : `./dist/${outputName}.${extension}`,
-      format,
+      format: format,
       banner: shouldBundleWorker(format) ? workerFnBanner : null,
       footer: shouldBundleWorker(format) ? workerFnFooter : null,
-      sourcemap,
+      sourcemap: !minified,
       sourcemapFile: minified
         ? `${outputName}.${extension}.min.map`
         : `${outputName}.${extension}.map`,
@@ -317,19 +263,19 @@ const buildRollupConfig = ({
 const configs = Object.entries({
   full: buildRollupConfig({
     type: BUILD_TYPE.full,
-    format: FORMAT.umd,
+    format: FORMAT.iife,
     minified: false,
   }),
   fullMin: buildRollupConfig({
     type: BUILD_TYPE.full,
-    format: FORMAT.umd,
+    format: FORMAT.iife,
     minified: true,
   }),
   fullEsm: buildRollupConfig({
     input: './src/exports-named.ts',
     type: BUILD_TYPE.full,
     format: FORMAT.esm,
-    minified: false,
+    minified: true,
   }),
   light: buildRollupConfig({
     type: BUILD_TYPE.light,
@@ -354,7 +300,7 @@ const configs = Object.entries({
       name: 'HlsWorker',
       file: './dist/hls.worker.js',
       format: FORMAT.iife,
-      sourcemap: true,
+      sourcemap: false,
       sourcemapFile: 'hls.worker.js.map',
     },
     plugins: [
